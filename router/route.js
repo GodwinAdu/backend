@@ -13,7 +13,8 @@ router.route('/register').post(controller.register)  //register user
 router.route('/authenticate').post((req,res) => res.end())  //authenticate user
 router.route('/login').post(controller.verifyUser,controller.login)  //login user
 router.route('/report').post(controller.createOrUpdateReport)  //creating or updating report
-router.route('/momo').post(controller.verifyUser,)  //login user
+router.route('/momo').post(controller.verifyUser)  //login user
+router.route('/sendAttendants').post(controller.sendAttendants)  //login user
 
 
 /** GET methods */
@@ -34,6 +35,7 @@ router.route('/VerifyOTP').get(controller.verifyOTP) //verify OTP
 
 /** PUT methods */
 router.route('/updateuser').put(Auth,controller.updateUser)  // is use to update user profile
+router.route('/updateAttendants').put(controller.updateAttendants)  // is use to update user profile
 router.route('/resetPassword').put(controller.resetPassword)  //use to reset users password
 
 

@@ -5,6 +5,7 @@ import ENV from '../config.js'
 import otpGenerator from 'otp-generator'
 import { client } from "../model/client.js";
 import { v4 as uuid4 } from 'uuid'
+import { clearActiveSession, createActiveSession, getActiveSession } from '../middleware/auth.js';
 
 /** middleware for verify user */
 
@@ -130,6 +131,11 @@ export async function login(req, res) {
     if (!passwordMatch) {
       return res.status(400).send({ error: "Password does not match" });
     }
+     // Check if user has an active session
+     const activeSession = await getActiveSession(user._id);
+     if (activeSession) {
+       return res.status(403).send({ error: "User already logged in on another device" });
+     }
 
     // Create JWT token
     const token = jwt.sign(
@@ -151,11 +157,15 @@ export async function login(req, res) {
       { expiresIn: "1hr" }
     );
 
+    // Create a session record for the user
+    await createActiveSession(user._id);
+
     return res.status(200).send({
       msg: "Login successfully",
       username: user.firstName,
       token,
     });
+    
   } catch (error) {
     return res.status(500).send({ error: error.message });
   }
@@ -438,6 +448,62 @@ export async function getYearlyReport(req, res) {
 
 
 /** POST: http://localhost:400/api/report*/
+export async function sendAttendants(req, res) {
+  const {
+    postedBy,
+    userId,
+    attendants,
+    date,
+  } = req.body;
+  try {
+
+    // Create a new record
+    const createResult = await client
+      .create({
+        _id: uuid4(),
+        _type: 'record',
+        postedBy,
+        attendants,
+        userId,
+        date
+       
+      })
+
+    res.status(201).send({ message: 'Record created successfully', data: createResult });
+
+  } catch (error) {
+    console.error('Error creating record:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+export async function updateAttendants(req, res) {
+  const {recordId} = req.body;
+
+  try {
+
+    const recordDocumentId = recordId;
+    const recordUpdateQuery = `*[_type == "record" && _id == $recordDocumentId][0]`;
+    const existingRecord = await client.fetch(recordUpdateQuery, { recordDocumentId });
+
+    if (!existingRecord) {
+      return res.status(404).send({ error: "record not found" });
+    }
+    
+    const updateRecord = {
+      ...existingRecord,
+      attendants,
+      date,
+    }
+
+    await client.createOrReplace(updateAttendants)
+
+    res.status(201).send({ message: 'Record created successfully', data: createResult });
+
+  } catch (error) {
+    console.error('Error creating record:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
 export async function createOrUpdateReport(req, res) {
   const {
     postedBy,
@@ -479,5 +545,17 @@ export async function createOrUpdateReport(req, res) {
   } catch (error) {
     console.error('Error creating/updating report:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+
+export async function logout(req,res){
+  const userId = req.body.userId; // or decode it from the token if you send the token.
+  
+  try {
+    await clearActiveSession(userId);
+    res.status(200).send({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
   }
 }
