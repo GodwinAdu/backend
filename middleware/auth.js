@@ -36,24 +36,7 @@ export async function getActiveSession(userId) {
     return session || null;
   }
 
-  export async function createActiveSession(userId, deviceInfo) {
-    // First, remove any existing session for the user.
-    const existingSession = await getActiveSession(userId);
-    if (existingSession) {
-      await client.delete(existingSession._id);
-    }
   
-    // Now, create a new session for the user.
-    const sessionData = {
-      _type: "session",
-      userId: userId,
-      createdAt: new Date().toISOString(),
-      deviceInfo: deviceInfo
-    };
-  
-    const newSession = await client.create(sessionData);
-    return newSession;
-  }
 
   export async function clearActiveSession(userId) {
     const existingSession = await getActiveSession(userId);

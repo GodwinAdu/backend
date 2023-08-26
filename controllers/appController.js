@@ -26,6 +26,10 @@ export async function verifyUser(req, res, next) {
     return res.status(500).send({ error: "Authentication Error" });
   }
 }
+export async function createActiveSession(userId, deviceInfo) {
+ 
+  return newSession;
+}
 
 // server time to verify login
 export async function serverTime(req, res) {
@@ -116,7 +120,7 @@ export async function register(req, res) {
  }
 */
 export async function login(req, res) {
-  const { email, password } = req.body;
+  const { email, password,deviceInfo } = req.body;
   try {
     const userQuery = `*[_type == "user" && email == $email]`;
     const users = await client.fetch(userQuery, { email });
@@ -158,14 +162,28 @@ export async function login(req, res) {
     );
 
     // Create a session record for the user
-    await createActiveSession(user._id);
+    // First, remove any existing session for the user.
+  const existingSession = await getActiveSession(user._id);
+  if (existingSession) {
+    await client.delete(existingSession._id);
+  }
+
+  // Now, create a new session for the user.
+  const sessionData = {
+    _type: "session",
+    userId: user._id,
+    createdAt: new Date().toISOString(),
+    deviceInfo: deviceInfo
+  };
+
+  const newSession = await client.create(sessionData);
 
     return res.status(200).send({
       msg: "Login successfully",
       username: user.firstName,
       token,
     });
-    
+
   } catch (error) {
     return res.status(500).send({ error: error.message });
   }
