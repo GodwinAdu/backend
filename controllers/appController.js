@@ -5,7 +5,7 @@ import ENV from '../config.js'
 import otpGenerator from 'otp-generator'
 import { client } from "../model/client.js";
 import { v4 as uuid4 } from 'uuid'
-import { clearActiveSession, createActiveSession, getActiveSession } from '../middleware/auth.js';
+import { clearActiveSession, createActiveSession } from '../middleware/auth.js';
 
 /** middleware for verify user */
 
@@ -25,10 +25,6 @@ export async function verifyUser(req, res, next) {
   } catch (error) {
     return res.status(500).send({ error: "Authentication Error" });
   }
-}
-export async function createActiveSession(userId, deviceInfo) {
- 
-  return newSession;
 }
 
 // server time to verify login
@@ -136,10 +132,10 @@ export async function login(req, res) {
       return res.status(400).send({ error: "Password does not match" });
     }
      // Check if user has an active session
-     const activeSession = await getActiveSession(user._id);
-     if (activeSession) {
-       return res.status(403).send({ error: "User already logged in on another device" });
-     }
+    const activeSession = await getActiveSession(user._id);
+    if (activeSession) {
+      return res.status(403).send({ error: "User already logged in on another device" });
+    }
 
     // Create JWT token
     const token = jwt.sign(
@@ -162,28 +158,13 @@ export async function login(req, res) {
     );
 
     // Create a session record for the user
-    // First, remove any existing session for the user.
-  const existingSession = await getActiveSession(user._id);
-  if (existingSession) {
-    await client.delete(existingSession._id);
-  }
-
-  // Now, create a new session for the user.
-  const sessionData = {
-    _type: "session",
-    userId: user._id,
-    createdAt: new Date().toISOString(),
-    deviceInfo: deviceInfo
-  };
-
-  const newSession = await client.create(sessionData);
+    await createActiveSession(user._id,deviceInfo);
 
     return res.status(200).send({
       msg: "Login successfully",
       username: user.firstName,
       token,
     });
-
   } catch (error) {
     return res.status(500).send({ error: error.message });
   }
