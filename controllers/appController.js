@@ -551,8 +551,7 @@ export async function createOrUpdateReport(req, res) {
 
 
 export async function logout(req,res){
-  const userId = req.body.userId; // or decode it from the token if you send the token.
-  
+  const {userId }= req.body; // or decode it from the token if you send the token.
   try {
     await clearActiveSession(userId);
     res.status(200).send({ message: "Logged out successfully" });
