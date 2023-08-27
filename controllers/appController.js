@@ -5,7 +5,7 @@ import ENV from '../config.js'
 import otpGenerator from 'otp-generator'
 import { client } from "../model/client.js";
 import { v4 as uuid4 } from 'uuid'
-import { clearActiveSession, createActiveSession } from '../middleware/auth.js';
+import { clearActiveSession, createActiveSession, getActiveSession } from '../middleware/auth.js';
 
 /** middleware for verify user */
 
@@ -132,7 +132,9 @@ export async function login(req, res) {
       return res.status(400).send({ error: "Password does not match" });
     }
      // Check if user has an active session
+    
     const activeSession = await getActiveSession(user._id);
+    
     if (activeSession) {
       return res.status(403).send({ error: "User already logged in on another device" });
     }
@@ -156,7 +158,7 @@ export async function login(req, res) {
       ENV.JWT_SECRET,
       { expiresIn: "1hr" }
     );
-
+ console.log(token)
     // Create a session record for the user
     await createActiveSession(user._id,deviceInfo);
 

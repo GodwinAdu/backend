@@ -1,5 +1,6 @@
 import  jwt  from "jsonwebtoken"
 import ENV from '../config.js'
+import { client } from "../model/client.js";
 
 
 export default async function Auth(req, res, next){
