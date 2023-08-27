@@ -58,22 +58,18 @@ export async function getActiveSession(userId) {
 
 export async function clearActiveSession(userId) {
     try {
-        const existingSession = await getActiveSession(userId);
+       
+         // Fetch the session id for the given userId
+         const query = `*[_type == "session" && userId == $userId]`;
+         const params = { userId };
+         
+         const sessions = await client.fetch(query, params);
         
-        if (!existingSession) {
-            console.warn("No active session found for user:", userId);
-            return false;
+         if (sessions && sessions.length > 0) {
+            // Use the first session's _id to delete (assuming one session per user)
+            // If there can be multiple sessions, you might want to loop over the results and delete each one
+            await client.delete(sessions[0]._id);
         }
-
-        // Assuming the session object has a unique ID like sessionId
-        const sessionId = existingSession._id;
-        if (!sessionId) {
-            console.error("Session object doesn't have a sessionId:", existingSession);
-            return false;
-        }
-
-        await client.delete(sessionId);
-        console.log("Successfully deleted session for user:", userId);
         return true;
     } catch (error) {
         console.error("Error clearing active session:", error);
